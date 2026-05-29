@@ -100,10 +100,10 @@ export default function Home() {
                 开始导入
               </Button>
               <label className="inline-flex h-9 cursor-pointer items-center rounded-md border px-3 text-sm hover:bg-[#F8FAFC]">
-                上传 Excel/CSV/TXT
+                上传 Excel/CSV/TXT/ZIP
                 <input
                   type="file"
-                  accept=".xlsx,.xls,.csv,.txt"
+                  accept=".xlsx,.xls,.csv,.txt,.zip"
                   className="hidden"
                   onChange={(event) => uploadFile(event.target.files?.[0])}
                 />

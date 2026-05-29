@@ -170,6 +170,75 @@ async function createEnterprise(organizationId, userId, data) {
   return mapEnterprise(result.rows[0]);
 }
 
+async function createImportedBatch(organizationId, userId, filename, source, records) {
+  return withTransaction(async (client) => {
+    const batch = await client.query(
+      `INSERT INTO upload_batches (organization_id, uploaded_by, filename, source, total_count, status)
+       VALUES ($1,$2,$3,$4,$5,'completed') RETURNING *`,
+      [organizationId, userId, filename || null, source || 'file', records.length]
+    );
+
+    let inserted = 0;
+    let updated = 0;
+    const enterprises = [];
+    for (const record of records) {
+      const name = String(record.name || '').trim();
+      if (!name) continue;
+      const result = await client.query(
+        `INSERT INTO enterprises (
+          organization_id, batch_id, owner_id, name, unified_credit_code, industry, scale, location,
+          contact_person, phone, phone_status, collection_status, collection_progress,
+          signals, profile, timeline, notes
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+        ON CONFLICT (organization_id, name)
+        DO UPDATE SET
+          batch_id = EXCLUDED.batch_id,
+          unified_credit_code = COALESCE(NULLIF(EXCLUDED.unified_credit_code, ''), enterprises.unified_credit_code),
+          industry = COALESCE(NULLIF(EXCLUDED.industry, ''), enterprises.industry),
+          scale = COALESCE(NULLIF(EXCLUDED.scale, ''), enterprises.scale),
+          location = COALESCE(NULLIF(EXCLUDED.location, ''), enterprises.location),
+          contact_person = COALESCE(NULLIF(EXCLUDED.contact_person, ''), enterprises.contact_person),
+          phone = COALESCE(NULLIF(EXCLUDED.phone, ''), enterprises.phone),
+          phone_status = EXCLUDED.phone_status,
+          collection_status = EXCLUDED.collection_status,
+          collection_progress = EXCLUDED.collection_progress,
+          signals = EXCLUDED.signals,
+          profile = EXCLUDED.profile,
+          timeline = EXCLUDED.timeline,
+          notes = COALESCE(NULLIF(EXCLUDED.notes, ''), enterprises.notes),
+          updated_at = now()
+        RETURNING *, (xmax = 0) AS inserted`,
+        [
+          organizationId,
+          batch.rows[0].id,
+          userId,
+          name,
+          record.unifiedCreditCode || '',
+          record.industry || '',
+          record.scale || '',
+          record.location || '',
+          record.contactPerson || '',
+          record.phone || '',
+          record.phoneStatus || 'pending',
+          record.collectionStatus || 'completed',
+          record.collectionProgress || 100,
+          JSON.stringify(record.signals || []),
+          JSON.stringify(record.profile || {}),
+          JSON.stringify(record.timeline || []),
+          record.notes || '',
+        ]
+      );
+      const row = result.rows[0];
+      if (row.inserted) inserted += 1;
+      else updated += 1;
+      enterprises.push(mapEnterprise(row));
+    }
+
+    return { batch: batch.rows[0], enterprises, summary: { inserted, updated, total: enterprises.length } };
+  });
+}
+
 async function updateEnterprise(organizationId, id, data) {
   const fields = [];
   const params = [organizationId, id];
@@ -235,6 +304,7 @@ module.exports = {
   listEnterprises,
   getEnterprise,
   createBatch,
+  createImportedBatch,
   createEnterprise,
   updateEnterprise,
   deleteEnterprise,

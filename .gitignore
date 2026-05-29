@@ -8,4 +8,5 @@ server/data
 coverage
 npm-debug.log*
 _extract/
+tmp_*/
 *.zip
