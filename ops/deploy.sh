@@ -12,4 +12,12 @@ systemctl reload nginx
 
 systemctl is-active --quiet zxb-intel.service
 systemctl is-active --quiet zxb-intel-worker.service
+
+for attempt in {1..20}; do
+  if curl -fsS https://zxbapi.aiyes.vip/health >/dev/null; then
+    exit 0
+  fi
+  sleep 1
+done
+
 curl -fsS https://zxbapi.aiyes.vip/health >/dev/null
