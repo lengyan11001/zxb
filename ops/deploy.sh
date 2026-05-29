@@ -5,7 +5,7 @@ APP_DIR="${APP_DIR:-/opt/enterprise-intel-prod}"
 cd "$APP_DIR"
 
 git pull --ff-only origin main
-npm ci
+npm ci --include=dev
 npm run build
 systemctl restart zxb-intel.service zxb-intel-worker.service
 systemctl reload nginx
