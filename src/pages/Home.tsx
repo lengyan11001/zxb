@@ -8,9 +8,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import type { Enterprise } from '@/types/api';
 
+interface DashboardData {
+  enterprises: {
+    total: number;
+    completed: number;
+    pending: number;
+  };
+  scripts: number;
+}
+
 export default function Home() {
   const navigate = useNavigate();
   const [enterprises, setEnterprises] = useState<Enterprise[]>([]);
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [names, setNames] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -18,7 +28,12 @@ export default function Home() {
   async function load() {
     setLoading(true);
     try {
-      setEnterprises(await api.getEnterprises() as Enterprise[]);
+      const [enterpriseData, dashboardData] = await Promise.all([
+        api.getEnterprises() as Promise<Enterprise[]>,
+        api.dashboard() as Promise<DashboardData>,
+      ]);
+      setEnterprises(enterpriseData);
+      setDashboard(dashboardData);
     } finally {
       setLoading(false);
     }
@@ -28,12 +43,18 @@ export default function Home() {
     load();
   }, []);
 
-  const stats = useMemo(() => ({
-    total: enterprises.length,
-    queued: enterprises.filter((e) => ['queued', 'collecting', 'pending'].includes(e.collectionStatus)).length,
-    completed: enterprises.filter((e) => e.collectionStatus === 'completed').length,
-    scripts: enterprises.filter((e) => e.aiScript).length,
-  }), [enterprises]);
+  const stats = useMemo(() => {
+    const queued = enterprises.filter((e) => ['queued', 'collecting', 'pending'].includes(e.collectionStatus)).length;
+    const completed = enterprises.filter((e) => e.collectionStatus === 'completed').length;
+    const scripts = enterprises.filter((e) => e.aiScript).length;
+
+    return {
+      total: dashboard?.enterprises.total ?? enterprises.length,
+      queued: dashboard?.enterprises.pending ?? queued,
+      completed: dashboard?.enterprises.completed ?? completed,
+      scripts: dashboard?.scripts ?? scripts,
+    };
+  }, [dashboard, enterprises]);
 
   async function submitNames() {
     const list = names.split(/[\n,，;；]+/).map((name) => name.trim()).filter(Boolean);
@@ -55,8 +76,9 @@ export default function Home() {
     if (!file) return;
     setSubmitting(true);
     try {
-      await api.uploadEnterprises(file);
-      toast.success('文件已上传，采集任务已进入队列');
+      const result = await api.uploadEnterprises(file) as { summary?: { total?: number }; enterprises?: Enterprise[] };
+      const count = result.summary?.total || result.enterprises?.length || 0;
+      toast.success(count ? `文件已导入 ${count} 家企业` : '文件已上传，采集任务已进入队列');
       await load();
     } catch (err: any) {
       toast.error(err.message || '上传失败');
