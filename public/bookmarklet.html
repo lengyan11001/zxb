@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>企查查Cookie获取工具</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: #F8FAFC;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .container {
+    max-width: 640px;
+    width: 100%;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    padding: 40px;
+  }
+  .header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .header h1 {
+    font-size: 24px;
+    color: #0F172A;
+    margin-bottom: 8px;
+  }
+  .header p {
+    font-size: 14px;
+    color: #64748B;
+  }
+
+  .step {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding: 20px;
+    background: #F8FAFC;
+    border-radius: 12px;
+    border-left: 4px solid #3B82F6;
+  }
+  .step-num {
+    width: 32px;
+    height: 32px;
+    background: #3B82F6;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .step-content h3 {
+    font-size: 15px;
+    color: #0F172A;
+    margin-bottom: 6px;
+  }
+  .step-content p {
+    font-size: 13px;
+    color: #64748B;
+    line-height: 1.6;
+  }
+
+  .bookmarklet-btn {
+    display: inline-block;
+    background: #3B82F6;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: move;
+    transition: all 0.2s;
+    border: 2px dashed #60A5FA;
+  }
+  .bookmarklet-btn:hover {
+    background: #2563EB;
+    border-style: solid;
+  }
+
+  .code-box {
+    background: #1E293B;
+    color: #E2E8F0;
+    padding: 16px;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-x: auto;
+    margin-top: 8px;
+    position: relative;
+  }
+  .code-box .copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #475569;
+    color: white;
+    border: none;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .code-box .copy-btn:hover { background: #64748B; }
+
+  .result-area {
+    margin-top: 20px;
+  }
+  .result-area label {
+    font-size: 13px;
+    color: #475569;
+    font-weight: 500;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .result-area textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 12px;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    resize: vertical;
+  }
+  .action-btns {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: #22C55E;
+    color: white;
+  }
+  .btn-primary:hover { background: #16A34A; }
+  .btn-secondary {
+    background: #F1F5F9;
+    color: #475569;
+  }
+  .btn-secondary:hover { background: #E2E8F0; }
+
+  .tip {
+    margin-top: 20px;
+    padding: 12px 16px;
+    background: #FEF3C7;
+    border-left: 4px solid #F59E0B;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #92400E;
+    line-height: 1.6;
+  }
+  .tip strong {
+    color: #78350F;
+  }
+
+  .divider {
+    height: 1px;
+    background: #E2E8F0;
+    margin: 24px 0;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>企查查 Cookie 获取工具</h1>
+    <p>三步完成配置，零代码获取Cookie</p>
+  </div>
+
+  <!-- Step 1 -->
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h3>添加书签工具到浏览器</h3>
+      <p>将下方蓝色按钮拖拽到浏览器书签栏（或右键添加到书签）</p>
+      <p style="margin-top:8px">
+        <a class="bookmarklet-btn" href="javascript:(function(){var d=document,c=d.cookie;if(!c){alert('当前页面没有Cookie，请先登录企查查');return;}if(c.indexOf('qcc')===-1&&c.indexOf('QCC')===-1){alert('当前页面没有检测到企查查Cookie。请确保您在企查查(qcc.com)页面且已登录');return;}var el=d.createElement('textarea');el.value=c;el.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;height:300px;z-index:99999;padding:16px;font:13px monospace;border:2px solid #3B82F6;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.3)';d.body.appendChild(el);el.select();var msg=d.createElement('div');msg.innerHTML='<b>Cookie已获取！</b><br>按 Ctrl+C 复制，然后粘贴到系统设置中<br><button onclick=\'this.parentElement.previousElementSibling.remove();this.parentElement.remove()\' style=\"margin-top:8px;padding:8px 16px;background:#3B82F6;color:white;border:none;border-radius:4px;cursor:pointer\">关闭</button>';msg.style.cssText='position:fixed;top:20%;left:50%;transform:translate(-50%,0);background:#22C55E;color:white;padding:12px 24px;border-radius:8px;z-index:99999;font:14px sans-serif;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.2)';d.body.appendChild(msg);})();">
+          📋 获取企查查Cookie
+        </a>
+      </p>
+      <p style="margin-top:8px;font-size:12px;color:#94A3B8">拖拽上方按钮到书签栏 → 登录企查查 → 点击书签 → 自动弹出Cookie</p>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h3>在企查查页面点击书签</h3>
+      <p>1. 打开 <a href="https://www.qcc.com/" target="_blank" style="color:#3B82F6">www.qcc.com</a> 并登录您的VIP账号</p>
+      <p>2. 点击书签栏上的「获取企查查Cookie」按钮</p>
+      <p>3. 页面会弹出Cookie文本框，按 Ctrl+C 复制</p>
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h3>粘贴到系统设置</h3>
+      <p>回到本系统 → 系统设置 → 企查查VIP → 粘贴Cookie → 测试连接</p>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 手动粘贴区 -->
+  <div class="result-area">
+    <label>或者手动粘贴Cookie到这里（从浏览器开发者工具复制）：</label>
+    <textarea id="cookieInput" placeholder="粘贴企查查Cookie...（格式如：QCCSESSID=xxx; acw_tc=xxx; ...）"></textarea>
+    <div class="action-btns">
+      <button class="btn btn-primary" onclick="saveCookie()">保存到系统</button>
+      <button class="btn btn-secondary" onclick="testCookie()">测试连接</button>
+      <button class="btn btn-secondary" onclick="window.close()">关闭</button>
+    </div>
+    <div id="msg" style="margin-top:12px;font-size:13px;min-height:24px"></div>
+  </div>
+
+  <div class="tip">
+    <strong>提示：</strong>Cookie有效期与您的登录状态一致。如果提示"Cookie已过期"，请重新登录企查查并重新获取Cookie。建议不要在公共电脑上保存Cookie。
+  </div>
+</div>
+
+<script>
+function showMsg(text, isError) {
+  const el = document.getElementById('msg');
+  el.textContent = text;
+  el.style.color = isError ? '#EF4444' : '#059669';
+}
+
+function saveCookie() {
+  const val = document.getElementById('cookieInput').value.trim();
+  if (!val) { showMsg('Cookie不能为空', true); return; }
+  localStorage.setItem('qcc_cookie', val);
+  showMsg('Cookie已保存到系统！请返回系统设置页面查看。');
+}
+
+async function testCookie() {
+  const val = document.getElementById('cookieInput').value.trim();
+  if (!val) { showMsg('Cookie不能为空', true); return; }
+  showMsg('正在测试连接...', false);
+  try {
+    const resp = await fetch('http://localhost:3001/api/qcc/verify', {
+      headers: { 'x-qcc-cookie': val }
+    });
+    const result = await resp.json();
+    if (result.valid) {
+      showMsg('连接成功！Cookie有效，可以开始采集数据了。');
+      localStorage.setItem('qcc_cookie', val);
+    } else {
+      showMsg('连接失败：' + (result.error || 'Cookie无效'), true);
+    }
+  } catch (err) {
+    showMsg('连接失败：' + err.message + '（请确保后端服务已启动）', true);
+  }
+}
+
+// 如果URL中有cookie参数，自动填充
+try {
+  const params = new URLSearchParams(location.search);
+  const cookie = params.get('cookie');
+  if (cookie) {
+    document.getElementById('cookieInput').value = decodeURIComponent(cookie);
+  }
+} catch (e) {}
+</script>
+</body>
+</html>

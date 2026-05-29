@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 222 47% 11%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 187 94% 43%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 187 94% 43%;
+    --radius: 0.625rem;
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 210 40% 96%;
+    --sidebar-primary: 187 94% 43%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-ring: 187 94% 43%;
+
+    /* Design System Tokens */
+    --ds-primary: #0F172A;
+    --ds-primary-light: #1E293B;
+    --ds-accent: #06B6D4;
+    --ds-accent-light: #67E8F9;
+    --ds-accent-dark: #0E7490;
+    --ds-gaoxin: #10B981;
+    --ds-zhuanjing: #F59E0B;
+    --ds-financing: #8B5CF6;
+    --ds-combined: #EC4899;
+    --ds-success: #22C55E;
+    --ds-warning: #F59E0B;
+    --ds-danger: #EF4444;
+    --ds-info: #3B82F6;
+    --ds-bg-primary: #F8FAFC;
+    --ds-bg-card: #FFFFFF;
+    --ds-bg-elevated: #F1F5F9;
+    --ds-border: #E2E8F0;
+    --ds-border-subtle: #F1F5F9;
+    --ds-text-primary: #0F172A;
+    --ds-text-secondary: #475569;
+    --ds-text-tertiary: #94A3B8;
+
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, #0F172A 0%, #1E3A5F 50%, #0E7490 100%);
+    --gradient-accent: linear-gradient(135deg, #06B6D4, #3B82F6);
+    --gradient-card: linear-gradient(180deg, rgba(6,182,212,0.08) 0%, transparent 100%);
+
+    /* Spacing */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+
+    /* Font */
+    --font-sans: "Noto Sans SC", "Inter", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", monospace;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--ds-bg-primary);
+    color: var(--ds-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}

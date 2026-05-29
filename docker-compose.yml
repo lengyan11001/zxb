@@ -1,0 +1,66 @@
+services:
+  app:
+    build: .
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      API_PREFIX: /zxbaip
+      DATABASE_URL: postgres://zxb_app:${POSTGRES_PASSWORD}@postgres:5432/zxb_intel
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3001:3001"
+    restart: unless-stopped
+
+  worker:
+    build: .
+    command: ["node", "server/workers/worker.cjs"]
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://zxb_app:${POSTGRES_PASSWORD}@postgres:5432/zxb_intel
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: zxb_intel
+      POSTGRES_USER: zxb_app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zxb_app -d zxb_intel"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
