@@ -57,4 +57,5 @@ export interface ScriptResult {
   keyClues: string[];
   objectionPrep: string[];
   provider: string;
+  errorMessage?: string;
 }

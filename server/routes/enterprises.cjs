@@ -150,6 +150,13 @@ router.get('/:id/script', enterpriseAccess, asyncHandler(async (req, res) => {
   res.json(script);
 }));
 
+router.get('/:id/scripts/:scriptId', enterpriseAccess, asyncHandler(async (req, res) => {
+  if (!isUuid(req.params.scriptId)) return res.status(400).json({ error: '无效话术ID' });
+  const script = await scriptsRepo.getScript(req.organizationId, req.params.id, req.params.scriptId);
+  if (!script) return res.status(404).json({ error: '话术不存在' });
+  res.json(script);
+}));
+
 router.get('/:id/calls', enterpriseAccess, asyncHandler(async (req, res) => {
   res.json(await enterprisesRepo.listCallRecords(req.organizationId, req.params.id));
 }));

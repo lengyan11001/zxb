@@ -2,6 +2,7 @@ import { Navigate, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider, useAuth } from './components/AuthProvider';
+import { Toaster } from './components/ui/sonner';
 import type { AuthUser } from './api/client';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
@@ -18,6 +19,7 @@ export default function App() {
   return (
     <AuthProvider>
       <AppRoutes />
+      <Toaster position="top-right" richColors />
     </AuthProvider>
   );
 }

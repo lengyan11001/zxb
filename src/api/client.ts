@@ -99,6 +99,8 @@ export const api = {
     apiFetch(`/enterprises/${enterpriseId}/generate-script`, { method: 'POST', body: JSON.stringify({ productId }) }),
   getLatestScript: (enterpriseId: string, productId?: string) =>
     apiFetch(`/enterprises/${enterpriseId}/script${productId ? `?productId=${encodeURIComponent(productId)}` : ''}`),
+  getScript: (enterpriseId: string, scriptId: string) =>
+    apiFetch(`/enterprises/${enterpriseId}/scripts/${scriptId}`),
   getCalls: (enterpriseId: string) => apiFetch(`/enterprises/${enterpriseId}/calls`),
   createCall: (enterpriseId: string, data: { result: string; notes?: string }) =>
     apiFetch(`/enterprises/${enterpriseId}/calls`, { method: 'POST', body: JSON.stringify(data) }),

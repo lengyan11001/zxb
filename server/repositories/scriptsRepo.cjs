@@ -80,4 +80,13 @@ async function getLatestScript(organizationId, enterpriseId, productId) {
   return mapScript(result.rows[0]);
 }
 
-module.exports = { createQueuedScript, markGenerating, completeScript, failScript, getLatestScript, mapScript };
+async function getScript(organizationId, enterpriseId, scriptId) {
+  const result = await query(
+    `SELECT * FROM scripts
+     WHERE organization_id = $1 AND enterprise_id = $2 AND id = $3`,
+    [organizationId, enterpriseId, scriptId]
+  );
+  return mapScript(result.rows[0]);
+}
+
+module.exports = { createQueuedScript, markGenerating, completeScript, failScript, getLatestScript, getScript, mapScript };
