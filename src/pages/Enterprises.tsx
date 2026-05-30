@@ -1,25 +1,37 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, Eye, Loader2, Phone, RefreshCw, Search, StickyNote } from 'lucide-react';
+import { Download, Eye, Loader2, Phone, RefreshCw, Search, StickyNote, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
-import { api, downloadExport } from '@/api/client';
+import { api, downloadExport, type User } from '@/api/client';
+import { useAuth } from '@/components/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { Enterprise } from '@/types/api';
 
+const callResults = ['未拨打', '已接通', '未接', '拒绝', '有效通话', '加微信', '约见', '回拨'];
+
 export default function Enterprises() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canOperate = user?.role === 'admin' || user?.role === 'manager';
   const [items, setItems] = useState<Enterprise[]>([]);
+  const [assignableUsers, setAssignableUsers] = useState<User[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [ownerId, setOwnerId] = useState('');
 
   async function load() {
     setLoading(true);
     try {
-      setItems(await api.getEnterprises(search ? { search } : undefined) as Enterprise[]);
+      const [enterpriseData, userData] = await Promise.all([
+        api.getEnterprises(search ? { search } : undefined) as Promise<Enterprise[]>,
+        canOperate ? api.getAssignableUsers() : Promise.resolve([]),
+      ]);
+      setItems(enterpriseData);
+      setAssignableUsers(userData);
     } catch (err: any) {
       toast.error(err.message || '加载企业失败');
     } finally {
@@ -63,31 +75,54 @@ export default function Enterprises() {
     await downloadExport(ids);
   }
 
+  async function assignSelected() {
+    const ids = Array.from(selected);
+    if (!ids.length) return toast.error('请先选择企业');
+    if (!ownerId) return toast.error('请选择接收人');
+    try {
+      const result = await api.assignEnterprises(ids, ownerId) as { updated: number };
+      toast.success(`已分配 ${result.updated} 家企业`);
+      setSelected(new Set());
+      await load();
+    } catch (err: any) {
+      toast.error(err.message || '分配失败');
+    }
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-[#0F172A]">企业列表</h1>
-          <p className="text-sm text-[#64748B]">正式外呼主战场，所有状态都会回写数据库。</p>
+          <p className="text-sm text-[#64748B]">{canOperate ? '主管视角可分配、导出和查看全量客户。' : '销售视角仅显示分配给你的客户。'}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={load}><RefreshCw className="h-4 w-4" />刷新</Button>
           <Button variant="outline" onClick={exportSelected}><Download className="h-4 w-4" />导出</Button>
         </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">
-        <Stat title="企业总数" value={stats.total} />
+        <Stat title="当前列表" value={stats.total} />
         <Stat title="已采集" value={stats.completed} />
         <Stat title="已外呼" value={stats.called} />
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 lg:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
           <Input className="pl-9" placeholder="搜索企业、联系人、手机号" value={search} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && load()} />
         </div>
         <Button onClick={load}>搜索</Button>
+        {canOperate && (
+          <div className="flex gap-2">
+            <select className="h-9 min-w-[160px] rounded-md border bg-white px-2 text-sm" value={ownerId} onChange={(event) => setOwnerId(event.target.value)}>
+              <option value="">选择接收人</option>
+              {assignableUsers.map((item) => <option key={item.id} value={item.id}>{item.name}（{item.role === 'manager' ? '主管' : '销售'}）</option>)}
+            </select>
+            <Button variant="outline" onClick={assignSelected}><UserPlus className="h-4 w-4" />分配</Button>
+          </div>
+        )}
       </div>
 
       <div className="rounded-lg border bg-white overflow-hidden">
@@ -107,7 +142,7 @@ export default function Enterprises() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={9} className="py-12 text-center text-[#64748B]"><Loader2 className="inline h-4 w-4 animate-spin mr-2" />加载中</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="py-12 text-center text-[#64748B]"><Loader2 className="inline h-4 w-4 animate-spin mr-2" />加载中...</TableCell></TableRow>
             ) : items.length === 0 ? (
               <TableRow><TableCell colSpan={9} className="py-12 text-center text-[#64748B]">暂无企业</TableCell></TableRow>
             ) : items.map((enterprise) => (
@@ -142,7 +177,7 @@ export default function Enterprises() {
                 <TableCell><StatusBadge status={enterprise.collectionStatus} /></TableCell>
                 <TableCell>
                   <select className="h-8 rounded-md border px-2 text-sm" value={enterprise.latestCallResult || '未拨打'} onChange={(event) => recordCall(enterprise.id, event.target.value)}>
-                    {['未拨打', '已接通', '未接', '拒绝', '有效通话', '加微信', '约见', '回拨'].map((result) => <option key={result}>{result}</option>)}
+                    {callResults.map((result) => <option key={result}>{result}</option>)}
                   </select>
                 </TableCell>
                 <TableCell className="text-right">

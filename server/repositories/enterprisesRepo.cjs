@@ -81,7 +81,13 @@ async function listEnterprises(organizationId, filters = {}) {
   return result.rows.map(mapEnterprise);
 }
 
-async function getEnterprise(organizationId, id) {
+async function getEnterprise(organizationId, id, filters = {}) {
+  const params = [organizationId, id];
+  const where = ['e.organization_id = $1', 'e.id = $2'];
+  if (filters.ownerId) {
+    params.push(filters.ownerId);
+    where.push(`e.owner_id = $${params.length}`);
+  }
   const result = await query(
     `SELECT e.*,
       latest.result AS latest_call_result,
@@ -104,8 +110,8 @@ async function getEnterprise(organizationId, id) {
        SELECT COUNT(*)::int AS call_count FROM call_records cr
        WHERE cr.enterprise_id = e.id
      ) counts ON true
-     WHERE e.organization_id = $1 AND e.id = $2`,
-    [organizationId, id]
+     WHERE ${where.join(' AND ')}`,
+    params
   );
   return mapEnterprise(result.rows[0]);
 }
@@ -276,6 +282,18 @@ async function updateEnterprise(organizationId, id, data) {
   return mapEnterprise(result.rows[0]);
 }
 
+async function assignEnterprises(organizationId, ids, ownerId) {
+  if (!Array.isArray(ids) || !ids.length) return { updated: 0 };
+  const result = await query(
+    `UPDATE enterprises
+     SET owner_id = $3, updated_at = now()
+     WHERE organization_id = $1 AND id = ANY($2::uuid[])
+     RETURNING id`,
+    [organizationId, ids, ownerId || null]
+  );
+  return { updated: result.rowCount };
+}
+
 async function deleteEnterprise(organizationId, id) {
   await query('DELETE FROM enterprises WHERE organization_id = $1 AND id = $2', [organizationId, id]);
 }
@@ -307,6 +325,7 @@ module.exports = {
   createImportedBatch,
   createEnterprise,
   updateEnterprise,
+  assignEnterprises,
   deleteEnterprise,
   addCallRecord,
   listCallRecords,

@@ -2,14 +2,23 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { BarChart3, Building2, ChevronLeft, ChevronRight, LayoutDashboard, Package, Settings, Sparkles } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
+import type { AuthUser } from '@/api/client';
 
-const navItems = [
-  { path: '/', label: '工作台', icon: LayoutDashboard },
-  { path: '/enterprises', label: '企业列表', icon: Building2 },
-  { path: '/products', label: '产品管理', icon: Package },
-  { path: '/product-ai', label: 'AI话术中心', icon: Sparkles },
-  { path: '/dashboard', label: '数据看板', icon: BarChart3 },
-  { path: '/settings', label: '系统设置', icon: Settings },
+type Role = AuthUser['role'];
+
+const roleLabel: Record<Role, string> = {
+  admin: '管理员',
+  manager: '主管',
+  sdr: '销售',
+};
+
+const navItems: Array<{ path: string; label: string; icon: typeof LayoutDashboard; roles: Role[] }> = [
+  { path: '/', label: '工作台', icon: LayoutDashboard, roles: ['admin', 'manager', 'sdr'] },
+  { path: '/enterprises', label: '企业列表', icon: Building2, roles: ['admin', 'manager', 'sdr'] },
+  { path: '/products', label: '产品管理', icon: Package, roles: ['admin', 'manager'] },
+  { path: '/product-ai', label: 'AI话术中心', icon: Sparkles, roles: ['admin', 'manager', 'sdr'] },
+  { path: '/dashboard', label: '数据看板', icon: BarChart3, roles: ['admin', 'manager', 'sdr'] },
+  { path: '/settings', label: '系统设置', icon: Settings, roles: ['admin', 'manager'] },
 ];
 
 export default function Sidebar() {
@@ -17,6 +26,7 @@ export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const allowedItems = navItems.filter((item) => item.roles.includes(user?.role || 'sdr'));
 
   return (
     <aside className={`fixed left-0 top-0 z-40 h-full bg-[#111827] flex flex-col transition-all duration-200 ${collapsed ? 'w-16' : 'w-60'}`}>
@@ -26,7 +36,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 py-4 px-2 space-y-1">
-        {navItems.map((item) => {
+        {allowedItems.map((item) => {
           const Icon = item.icon;
           const active = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
           return (
@@ -61,7 +71,7 @@ export default function Sidebar() {
           {!collapsed && (
             <div className="overflow-hidden">
               <div className="text-xs font-medium text-white truncate">{user?.name || '用户'}</div>
-              <div className="text-[11px] text-slate-500 truncate">{user?.role || 'sdr'}</div>
+              <div className="text-[11px] text-slate-500 truncate">{roleLabel[user?.role || 'sdr']}</div>
             </div>
           )}
         </div>

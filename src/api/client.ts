@@ -9,6 +9,18 @@ export interface AuthUser {
   role: 'admin' | 'manager' | 'sdr';
 }
 
+export interface User {
+  id: string;
+  organizationId: string;
+  email: string;
+  name: string;
+  role: 'admin' | 'manager' | 'sdr';
+  status: 'active' | 'disabled';
+  enterpriseCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY);
 }
@@ -73,6 +85,8 @@ export const api = {
   getEnterprise: (id: string) => apiFetch(`/enterprises/${id}`),
   createEnterprise: (data: unknown) => apiFetch('/enterprises', { method: 'POST', body: JSON.stringify(data) }),
   batchCreate: (names: string[]) => apiFetch('/enterprises/batch', { method: 'POST', body: JSON.stringify({ names }) }),
+  assignEnterprises: (ids: string[], ownerId: string | null) =>
+    apiFetch('/enterprises/assign', { method: 'POST', body: JSON.stringify({ ids, ownerId }) }),
   uploadEnterprises: (file: File) => {
     const form = new FormData();
     form.set('file', file);
@@ -91,6 +105,11 @@ export const api = {
 
   getDataSources: () => apiFetch('/settings/data-sources'),
   updateDataSource: (key: string, data: unknown) => apiFetch(`/settings/data-sources/${key}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  getUsers: (): Promise<User[]> => apiFetch('/users'),
+  getAssignableUsers: (): Promise<User[]> => apiFetch('/users/assignable'),
+  createUser: (data: unknown): Promise<User> => apiFetch('/users', { method: 'POST', body: JSON.stringify(data) }),
+  updateUser: (id: string, data: unknown): Promise<User> => apiFetch(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
 };
 
 export async function downloadExport(ids: string[]) {

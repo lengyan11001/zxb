@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { BarChart3, Building2, CloudUpload, Loader2, PhoneCall, Sparkles, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/api/client';
+import { useAuth } from '@/components/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,6 +20,8 @@ interface DashboardData {
 
 export default function Home() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canImport = user?.role === 'admin' || user?.role === 'manager';
   const [enterprises, setEnterprises] = useState<Enterprise[]>([]);
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [names, setNames] = useState('');
@@ -91,48 +94,50 @@ export default function Home() {
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold text-[#0F172A]">工作台</h1>
-        <p className="text-sm text-[#64748B]">上传名单、查看采集进度，并快速进入外呼流程。</p>
+        <p className="text-sm text-[#64748B]">{canImport ? '导入名单、分配客户、查看采集进度，并快速进入外呼流程。' : '查看分配给你的客户、生成话术并记录外呼进展。'}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
-        <StatCard title="企业总数" value={stats.total} icon={Building2} />
+        <StatCard title={canImport ? '企业总数' : '我的客户'} value={stats.total} icon={Building2} />
         <StatCard title="队列中" value={stats.queued} icon={Loader2} />
         <StatCard title="已采集" value={stats.completed} icon={CloudUpload} />
         <StatCard title="已生成话术" value={stats.scripts} icon={Sparkles} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <CloudUpload className="h-5 w-5 text-[#0891B2]" />
-              导入企业名单
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Textarea
-              value={names}
-              onChange={(event) => setNames(event.target.value)}
-              placeholder="每行一个企业名称，也支持逗号或分号分隔"
-              className="min-h-[180px]"
-            />
-            <div className="flex flex-wrap items-center gap-3">
-              <Button onClick={submitNames} disabled={submitting}>
-                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                开始导入
-              </Button>
-              <label className="inline-flex h-9 cursor-pointer items-center rounded-md border px-3 text-sm hover:bg-[#F8FAFC]">
-                上传 Excel/CSV/TXT/ZIP
-                <input
-                  type="file"
-                  accept=".xlsx,.xls,.csv,.txt,.zip"
-                  className="hidden"
-                  onChange={(event) => uploadFile(event.target.files?.[0])}
-                />
-              </label>
-            </div>
-          </CardContent>
-        </Card>
+      <div className={`grid gap-4 ${canImport ? 'lg:grid-cols-[1.2fr_0.8fr]' : 'lg:grid-cols-[0.9fr_1.1fr]'}`}>
+        {canImport && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CloudUpload className="h-5 w-5 text-[#0891B2]" />
+                导入企业名单
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Textarea
+                value={names}
+                onChange={(event) => setNames(event.target.value)}
+                placeholder="每行一个企业名称，也支持逗号或分号分隔"
+                className="min-h-[180px]"
+              />
+              <div className="flex flex-wrap items-center gap-3">
+                <Button onClick={submitNames} disabled={submitting}>
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  开始导入
+                </Button>
+                <label className="inline-flex h-9 cursor-pointer items-center rounded-md border px-3 text-sm hover:bg-[#F8FAFC]">
+                  上传 Excel/CSV/TXT/ZIP
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls,.csv,.txt,.zip"
+                    className="hidden"
+                    onChange={(event) => uploadFile(event.target.files?.[0])}
+                  />
+                </label>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
@@ -157,7 +162,7 @@ export default function Home() {
           {loading ? (
             <div className="py-10 text-center text-sm text-[#64748B]">加载中...</div>
           ) : enterprises.length === 0 ? (
-            <div className="py-10 text-center text-sm text-[#64748B]">还没有企业名单，先导入一批试试。</div>
+            <div className="py-10 text-center text-sm text-[#64748B]">{canImport ? '还没有企业名单，先导入一批试试。' : '还没有分配给你的客户。'}</div>
           ) : (
             <div className="divide-y">
               {enterprises.slice(0, 8).map((enterprise) => (
@@ -168,7 +173,7 @@ export default function Home() {
                 >
                   <div>
                     <div className="font-medium text-[#0F172A]">{enterprise.name}</div>
-                    <div className="text-xs text-[#64748B]">{enterprise.industry || '待采集'} · {enterprise.location || '未知地区'}</div>
+                    <div className="text-xs text-[#64748B]">{enterprise.industry || '待采集'} / {enterprise.location || '未知地区'}</div>
                   </div>
                   <span className="text-xs text-[#64748B]">{statusLabel(enterprise.collectionStatus)}</span>
                 </button>

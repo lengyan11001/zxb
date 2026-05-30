@@ -5,6 +5,7 @@ const enterprisesRoutes = require('./enterprises.cjs');
 const dashboardRoutes = require('./dashboard.cjs');
 const exportRoutes = require('./export.cjs');
 const settingsRoutes = require('./settings.cjs');
+const usersRoutes = require('./users.cjs');
 const { requireAuth } = require('../middleware/auth.cjs');
 
 const router = express.Router();
@@ -20,5 +21,6 @@ router.use('/enterprises', enterprisesRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/export', exportRoutes);
 router.use('/settings', settingsRoutes);
+router.use('/users', usersRoutes);
 
 module.exports = router;

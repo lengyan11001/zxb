@@ -81,6 +81,22 @@ async function seed() {
     );
     const adminId = userResult.rows[0].id;
 
+    const demoUsers = [
+      ['manager@zxb.local', '运营主管', 'manager', process.env.MANAGER_PASSWORD || 'manager2026'],
+      ['sdr@zxb.local', '销售一号', 'sdr', process.env.SDR_PASSWORD || 'sdr2026'],
+    ];
+
+    for (const [email, name, role, password] of demoUsers) {
+      const hash = await bcrypt.hash(password, 12);
+      await client.query(
+        `INSERT INTO users (organization_id, email, password_hash, name, role)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (organization_id, email)
+         DO UPDATE SET password_hash = EXCLUDED.password_hash, name = EXCLUDED.name, role = EXCLUDED.role, status = 'active', updated_at = now()`,
+        [organizationId, email, hash, name, role]
+      );
+    }
+
     for (const product of products) {
       await client.query(
         `INSERT INTO products (

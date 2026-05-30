@@ -41,4 +41,41 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { signToken, requireAuth, requireRole };
+function isAdmin(user) {
+  return user?.role === 'admin';
+}
+
+function isManager(user) {
+  return user?.role === 'manager';
+}
+
+function isOperator(user) {
+  return isAdmin(user) || isManager(user);
+}
+
+function canAccessEnterprise(user, enterprise) {
+  if (!user || !enterprise) return false;
+  if (isOperator(user)) return true;
+  return user.role === 'sdr' && enterprise.ownerId === user.id;
+}
+
+function requireEnterpriseAccess(getEnterprise) {
+  return async function enterpriseAccessGuard(req, res, next) {
+    const enterprise = await getEnterprise(req.organizationId, req.params.id);
+    if (!enterprise) return res.status(404).json({ error: '企业不存在' });
+    if (!canAccessEnterprise(req.user, enterprise)) return res.status(403).json({ error: 'FORBIDDEN' });
+    req.enterprise = enterprise;
+    return next();
+  };
+}
+
+module.exports = {
+  signToken,
+  requireAuth,
+  requireRole,
+  isAdmin,
+  isManager,
+  isOperator,
+  canAccessEnterprise,
+  requireEnterpriseAccess,
+};

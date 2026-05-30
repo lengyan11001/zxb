@@ -17,9 +17,14 @@ export default function Login() {
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError('');
+    const trimmed = account.trim();
+    if (trimmed !== 'admin' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setError('请输入正确的邮箱格式，管理员账号可直接使用 admin');
+      return;
+    }
     setLoading(true);
     try {
-      await login(account, password);
+      await login(trimmed, password);
     } catch (err: any) {
       setError(err.message || '登录失败');
     } finally {
@@ -41,10 +46,10 @@ export default function Login() {
         </div>
 
         <label className="text-sm font-medium text-[#334155]">账号</label>
-        <Input className="mt-2 mb-4" value={account} onChange={(e) => setAccount(e.target.value)} type="text" autoComplete="username" />
+        <Input className="mt-2 mb-4" value={account} onChange={(e) => setAccount(e.target.value)} type="text" autoComplete="username" placeholder="admin 或邮箱" />
 
         <label className="text-sm font-medium text-[#334155]">密码</label>
-        <Input className="mt-2 mb-4" value={password} onChange={(e) => setPassword(e.target.value)} type="password" autoComplete="current-password" placeholder="部署时设置的管理员密码" />
+        <Input className="mt-2 mb-4" value={password} onChange={(e) => setPassword(e.target.value)} type="password" autoComplete="current-password" placeholder="请输入密码" />
 
         {error && <div className="mb-4 rounded-md bg-[#FEF2F2] px-3 py-2 text-sm text-[#B91C1C]">{error}</div>}
 
