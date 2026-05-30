@@ -6,7 +6,7 @@ const { audit } = require('../middleware/audit.cjs');
 
 const router = express.Router();
 
-router.get('/data-sources', asyncHandler(async (req, res) => {
+router.get('/data-sources', requireRole('admin', 'manager'), asyncHandler(async (req, res) => {
   const result = await query(
     `SELECT key, name, description, status, config, updated_at
      FROM data_sources WHERE organization_id = $1 ORDER BY key`,

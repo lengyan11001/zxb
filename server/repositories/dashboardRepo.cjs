@@ -30,9 +30,12 @@ async function getDashboard(organizationId, userId, role) {
 
   const scripts = await query(
     `SELECT COUNT(*)::int AS total_scripts
-     FROM scripts
-     WHERE organization_id = $1 AND status = 'completed'`,
-    [organizationId]
+     FROM scripts s
+     JOIN enterprises e ON e.id = s.enterprise_id
+     WHERE s.organization_id = $1
+       AND s.status = 'completed'
+       ${role === 'sdr' ? 'AND e.owner_id = $2' : ''}`,
+    role === 'sdr' ? [organizationId, userId] : [organizationId]
   );
 
   const recent = await query(
