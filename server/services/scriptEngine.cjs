@@ -54,7 +54,7 @@ async function generateWithChatCompletions(product, enterprise, variation) {
 
 请生成第一通电话话术。`;
 
-  const res = await axios.post(env.llmApiUrl, {
+  const payload = {
     model: env.llmModel,
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -62,16 +62,35 @@ async function generateWithChatCompletions(product, enterprise, variation) {
     ],
     temperature: Math.min(1, 0.55 + variation * 0.08),
     response_format: { type: 'json_object' },
-  }, {
-    headers: {
-      Authorization: `Bearer ${env.llmApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    timeout: env.llmTimeoutMs,
-  });
+  };
+
+  const res = await postChatWithRetry(payload);
 
   const content = parseModelContent(res.data);
   return normalizeScript(content, env.llmProvider);
+}
+
+async function postChatWithRetry(payload) {
+  const delays = [1200, 2500, 5000];
+  let lastError;
+  for (let attempt = 0; attempt <= delays.length; attempt += 1) {
+    try {
+      return await axios.post(env.llmApiUrl, payload, {
+        headers: {
+          Authorization: `Bearer ${env.llmApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: env.llmTimeoutMs,
+      });
+    } catch (err) {
+      lastError = err;
+      const status = err.response?.status;
+      const retryable = status === 429 || status >= 500 || err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT';
+      if (!retryable || attempt === delays.length) break;
+      await new Promise((resolve) => setTimeout(resolve, delays[attempt]));
+    }
+  }
+  throw lastError;
 }
 
 function parseModelContent(data) {
