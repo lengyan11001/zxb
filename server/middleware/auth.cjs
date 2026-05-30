@@ -59,8 +59,20 @@ function canAccessEnterprise(user, enterprise) {
   return user.role === 'sdr' && enterprise.ownerId === user.id;
 }
 
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ''));
+}
+
+function requireUuidParam(name = 'id') {
+  return function uuidParamGuard(req, res, next) {
+    if (!isUuid(req.params[name])) return res.status(400).json({ error: '无效ID' });
+    return next();
+  };
+}
+
 function requireEnterpriseAccess(getEnterprise) {
   return async function enterpriseAccessGuard(req, res, next) {
+    if (!isUuid(req.params.id)) return res.status(400).json({ error: '无效企业ID' });
     const enterprise = await getEnterprise(req.organizationId, req.params.id);
     if (!enterprise) return res.status(404).json({ error: '企业不存在' });
     if (!canAccessEnterprise(req.user, enterprise)) return res.status(403).json({ error: 'FORBIDDEN' });
@@ -77,5 +89,7 @@ module.exports = {
   isManager,
   isOperator,
   canAccessEnterprise,
+  isUuid,
+  requireUuidParam,
   requireEnterpriseAccess,
 };

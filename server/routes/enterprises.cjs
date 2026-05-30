@@ -7,7 +7,7 @@ const usersRepo = require('../repositories/usersRepo.cjs');
 const scriptsRepo = require('../repositories/scriptsRepo.cjs');
 const { asyncHandler } = require('../utils/asyncHandler.cjs');
 const { audit } = require('../middleware/audit.cjs');
-const { requireRole, requireEnterpriseAccess } = require('../middleware/auth.cjs');
+const { requireRole, requireEnterpriseAccess, isUuid } = require('../middleware/auth.cjs');
 const { env } = require('../config/env.cjs');
 const { collectQueue, scriptQueue } = require('../workers/queues.cjs');
 
@@ -33,6 +33,8 @@ router.post('/assign', requireRole('admin', 'manager'), asyncHandler(async (req,
   const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
   const ownerId = req.body.ownerId || null;
   if (!ids.length) return res.status(400).json({ error: '请选择要分配的企业' });
+  if (!ids.every(isUuid)) return res.status(400).json({ error: '企业ID格式不正确' });
+  if (ownerId && !isUuid(ownerId)) return res.status(400).json({ error: '接收人ID格式不正确' });
   if (ownerId) {
     const owner = await usersRepo.getUser(req.organizationId, ownerId);
     if (!owner || owner.status !== 'active' || !['manager', 'sdr'].includes(owner.role)) {
@@ -107,6 +109,7 @@ router.put('/:id', enterpriseAccess, asyncHandler(async (req, res) => {
 }));
 
 router.delete('/:id', requireRole('admin', 'manager'), asyncHandler(async (req, res) => {
+  if (!isUuid(req.params.id)) return res.status(400).json({ error: '无效企业ID' });
   await enterprisesRepo.deleteEnterprise(req.organizationId, req.params.id);
   await audit(req, 'delete', 'enterprise', req.params.id);
   res.json({ success: true });
@@ -127,6 +130,7 @@ router.post('/:id/generate-script', enterpriseAccess, asyncHandler(async (req, r
   const enterprise = req.enterprise;
   const productId = req.body.productId || enterprise.activeProductId;
   if (!productId) return res.status(400).json({ error: '请选择产品' });
+  if (!isUuid(productId)) return res.status(400).json({ error: '无效产品ID' });
 
   const script = await scriptsRepo.createQueuedScript(req.organizationId, req.user.id, enterprise.id, productId);
   const job = await scriptQueue.add('generate', {
@@ -140,6 +144,7 @@ router.post('/:id/generate-script', enterpriseAccess, asyncHandler(async (req, r
 }));
 
 router.get('/:id/script', enterpriseAccess, asyncHandler(async (req, res) => {
+  if (req.query.productId && !isUuid(req.query.productId)) return res.status(400).json({ error: '无效产品ID' });
   const script = await scriptsRepo.getLatestScript(req.organizationId, req.params.id, req.query.productId);
   if (!script) return res.status(404).json({ error: '暂无话术' });
   res.json(script);
